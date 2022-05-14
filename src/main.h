@@ -9,6 +9,7 @@
 #include <math.h>
 
 #include "pd_api.h"
+#include "dooter.h"
 
 static void init(PlaydateAPI* pd);
 static int update(void* userdata);

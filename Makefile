@@ -21,7 +21,8 @@ endif
 VPATH += src
 
 # List C source files here
-SRC = src/main.c
+SRC = src/main.c \
+		src/dooter.c
 
 # List all user directories here
 UINCDIR = 
