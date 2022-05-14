@@ -1,0 +1,6 @@
+name=playdate invaders
+author=pondodev
+description=this is supposed to be space invaders but i suppose we'll see how that goes
+bundleID=dev.pondo.playdate-invaders
+version=0.1
+imagePath=SystemAssets
