@@ -17,6 +17,8 @@ void init_sound_engine(PlaydateAPI* pd) {
     if (! seq->loadMidiFile(music, "Sequences/megalovania.mid"))
         sys->error("failed to load sequence");
 
+    seq->setLoops(music, 0, seq->getLength(music), 0);
+
     PDSynthInstrument* inst = snd->instrument->newInstrument();
     snd->instrument->setVolume(inst, 0.2, 0.2);
     snd->channel->addSource(snd->getDefaultChannel(), (SoundSource*)inst);
