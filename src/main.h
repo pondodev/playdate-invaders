@@ -10,6 +10,8 @@
 
 #include "pd_api.h"
 #include "dooter.h"
+#include "list.h"
+#include "projectile.h"
 
 static void init(PlaydateAPI* pd);
 static int update(void* userdata);

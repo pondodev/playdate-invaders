@@ -8,6 +8,9 @@ static const struct playdate_sys* sys = NULL;
 static const struct playdate_sprite* spr = NULL;
 static const struct playdate_graphics* gfx = NULL;
 static const struct playdate_sound* snd = NULL;
+static const ListManager* lm = NULL;
+
+static List projectiles; 
 
 typedef struct PlayerInfo {
 	LCDBitmap* image;
@@ -55,7 +58,19 @@ static void init(PlaydateAPI* pd) {
 	init_sound_engine(pd);
 	play_music();
 
+	lm = get_list_manager();
+	projectiles = lm->init();
+
     sys->setUpdateCallback(update, pd);
+}
+
+static ListNodeAction update_projectiles(uint32_t index, void* data) {
+	Projectile* proj = (Projectile*)data;
+	move_projectile(proj);
+	if (proj->y < 0) return kRemove;
+
+	gfx->fillEllipse(proj->x, proj->y, 5, 5, 0, 360, kColorBlack);
+	return kNoAction;
 }
 
 static int update(void* userdata) {
@@ -63,8 +78,8 @@ static int update(void* userdata) {
 
     // move the sprite around
 	{
-		PDButtons current;
-		sys->getButtonState(&current, NULL, NULL);
+		PDButtons current, pushed;
+		sys->getButtonState(&current, &pushed, NULL);
 
 		int x = 0;
 		int y = 0;
@@ -76,6 +91,13 @@ static int update(void* userdata) {
 
 		int spd = current & kButtonB ? player.runSpeed : player.walkSpeed;
 		spr->moveBy(player.sprite, x * spd, y * spd);
+
+		if (pushed & kButtonA) {
+			float x, y;
+			spr->getPosition(player.sprite, &x, &y);
+			Projectile* new_proj = new_projectile((int)x, (int)y, 5);
+			lm->add(&projectiles, new_proj);
+		}
 	}
 
 	// wrap around screen
@@ -91,9 +113,7 @@ static int update(void* userdata) {
 	}
 
 	// sprite go wee
-	if (! sys->isCrankDocked()) {
-		// this is actually really unperformant. should be only rotating the
-		// bitmap when there's a change in the crank angle
+	if (! sys->isCrankDocked() && fabsf(sys->getCrankChange()) > 1.f) {
 		float angle = sys->getCrankAngle();
 		LCDBitmap* old = player.rotatedImage;
 		player.rotatedImage = gfx->rotatedBitmap(player.image, angle, 1, 1, NULL);
@@ -107,6 +127,8 @@ static int update(void* userdata) {
     // draw stuff
     gfx->clear(kColorWhite);
     spr->drawSprites();
+
+	lm->iterate(&projectiles, update_projectiles);
 
     sys->drawFPS(0,0);
 

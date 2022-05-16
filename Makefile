@@ -22,7 +22,9 @@ VPATH += src
 
 # List C source files here
 SRC = src/main.c \
-		src/dooter.c
+		src/dooter.c \
+		src/list.c \
+		src/projectile.c
 
 # List all user directories here
 UINCDIR = 
