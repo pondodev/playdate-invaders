@@ -47,7 +47,9 @@ static void init(PlaydateAPI* pd) {
     player.sprite = spr->newSprite();
     spr->addSprite(player.sprite);
     spr->setImage(player.sprite, player.image, kBitmapUnflipped);
-    spr->moveTo(player.sprite, 200, 120);
+	int player_height;
+	gfx->getBitmapData(player.image, NULL, &player_height, NULL, NULL, NULL);
+    spr->moveTo(player.sprite, SCREEN_WIDTH / 2, SCREEN_HEIGHT - player_height);
 
 	player.walkSpeed = 2;
 	player.runSpeed = 5;
@@ -69,7 +71,7 @@ static ListNodeAction update_projectiles(uint32_t index, void* data) {
 	move_projectile(proj);
 	if (proj->y < 0) return kRemove;
 
-	gfx->fillEllipse(proj->x, proj->y, 5, 5, 0, 360, kColorBlack);
+	gfx->fillEllipse(proj->x - 2, proj->y - 2, 4, 4, 0, 360, kColorBlack);
 	return kNoAction;
 }
 
@@ -82,15 +84,12 @@ static int update(void* userdata) {
 		sys->getButtonState(&current, &pushed, NULL);
 
 		int x = 0;
-		int y = 0;
 
-		if (current & kButtonUp) --y;
-		if (current & kButtonDown) ++y;
 		if (current & kButtonLeft) --x;
 		if (current & kButtonRight) ++x;
 
 		int spd = current & kButtonB ? player.runSpeed : player.walkSpeed;
-		spr->moveBy(player.sprite, x * spd, y * spd);
+		spr->moveBy(player.sprite, x * spd, 0);
 
 		if (pushed & kButtonA) {
 			float x, y;
@@ -107,8 +106,6 @@ static int update(void* userdata) {
 
 		if (x < 0) x += SCREEN_WIDTH;
 		if (x > SCREEN_WIDTH) x -= SCREEN_WIDTH;
-		if (y < 0) y += SCREEN_HEIGHT;
-		if (y > SCREEN_HEIGHT) y -= SCREEN_HEIGHT;
 		pd->sprite->moveTo(player.sprite, x, y);
 	}
 
