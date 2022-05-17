@@ -12,6 +12,7 @@
 #include "dooter.h"
 #include "list.h"
 #include "projectile.h"
+#include "game_math.h"
 
 static void init(PlaydateAPI* pd);
 static int update(void* userdata);

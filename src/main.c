@@ -13,14 +13,18 @@ static const ListManager* lm = NULL;
 static List projectiles; 
 
 typedef struct PlayerInfo {
-	LCDBitmap* image;
-	LCDBitmap* rotatedImage;
-	LCDSprite* sprite;
-	int walkSpeed;
-	int runSpeed;
+	LCDBitmap*	image;
+	LCDSprite*	sprite;
+	int			walk_speed;
+	int			run_speed;
+	float		ammo_percent;
+	float		ammo_reload_rate;		// how much % 1 degree of crank rotation reloads
+	float		ammo_consumption_rate;	// how much % firing once uses up
 } PlayerInfo;
 
 PlayerInfo player;
+
+LCDBitmap* projectile_image = NULL;
 
 int eventHandler(PlaydateAPI* pd, PDSystemEvent event, uint32_t arg) {
     (void)arg; // arg is currently only used for event = kEventKeyPressed
@@ -42,7 +46,6 @@ static void init(PlaydateAPI* pd) {
     if (player.image == NULL) {
         sys->error("failed to load player bitmap: %s", err);
 	}
-	player.rotatedImage = NULL;
 
     player.sprite = spr->newSprite();
     spr->addSprite(player.sprite);
@@ -51,11 +54,16 @@ static void init(PlaydateAPI* pd) {
 	gfx->getBitmapData(player.image, NULL, &player_height, NULL, NULL, NULL);
     spr->moveTo(player.sprite, SCREEN_WIDTH / 2, SCREEN_HEIGHT - player_height);
 
-	player.walkSpeed = 2;
-	player.runSpeed = 5;
+	player.walk_speed = 2;
+	player.run_speed = 5;
+	player.ammo_percent = 100.f;
+	player.ammo_reload_rate = 0.1f;
+	player.ammo_consumption_rate = 10.f;
 
-	// GAMER TIME
-	pd->display->setRefreshRate(50);
+	projectile_image = gfx->loadBitmap("Images/projectile", &err);
+	if (projectile_image == NULL) {
+		sys->error("failed to load projectile bitmap: %s", err);
+	}
 
 	init_sound_engine(pd);
 	play_music();
@@ -71,12 +79,33 @@ static ListNodeAction update_projectiles(uint32_t index, void* data) {
 	move_projectile(proj);
 	if (proj->y < 0) return kRemove;
 
-	gfx->fillEllipse(proj->x - 2, proj->y - 2, 4, 4, 0, 360, kColorBlack);
+	return kNoAction;
+}
+
+static ListNodeAction draw_projectiles(uint32_t index, void* data) {
+	Projectile* proj = (Projectile*)data;
+	if (++proj->frames_since_flip == proj->frames_to_flip) {
+		proj->frames_since_flip = 0;
+		proj->flipped = !proj->flipped;
+	}
+
+	LCDBitmapFlip flip = proj->flipped ? kBitmapFlippedX : kBitmapUnflipped;
+	gfx->drawBitmap(projectile_image, proj->x, proj->y, flip);
+
 	return kNoAction;
 }
 
 static int update(void* userdata) {
     PlaydateAPI* pd = userdata;
+
+	// ammo reloading
+	if (! sys->isCrankDocked()) {
+		float angle_delta = sys->getCrankChange();
+		if (angle_delta > 0.f) {
+			player.ammo_percent += angle_delta * player.ammo_reload_rate;
+			player.ammo_percent = player.ammo_percent < 100.f ? player.ammo_percent : 100.f;
+		}
+	}
 
     // move the sprite around
 	{
@@ -88,10 +117,12 @@ static int update(void* userdata) {
 		if (current & kButtonLeft) --x;
 		if (current & kButtonRight) ++x;
 
-		int spd = current & kButtonB ? player.runSpeed : player.walkSpeed;
+		int spd = current & kButtonB ? player.run_speed : player.walk_speed;
 		spr->moveBy(player.sprite, x * spd, 0);
 
-		if (pushed & kButtonA) {
+		if (pushed & kButtonA && player.ammo_percent >= player.ammo_consumption_rate) {
+			player.ammo_percent -= player.ammo_consumption_rate;
+
 			float x, y;
 			spr->getPosition(player.sprite, &x, &y);
 			Projectile* new_proj = new_projectile((int)x, (int)y, 5);
@@ -109,23 +140,26 @@ static int update(void* userdata) {
 		pd->sprite->moveTo(player.sprite, x, y);
 	}
 
-	// sprite go wee
-	if (! sys->isCrankDocked() && fabsf(sys->getCrankChange()) > 1.f) {
-		float angle = sys->getCrankAngle();
-		LCDBitmap* old = player.rotatedImage;
-		player.rotatedImage = gfx->rotatedBitmap(player.image, angle, 1, 1, NULL);
-		spr->setImage(player.sprite, player.rotatedImage, kBitmapUnflipped);
-
-		if (old != NULL) {
-			gfx->freeBitmap(old);
-		}
-	}
+	lm->iterate(&projectiles, update_projectiles);
 
     // draw stuff
     gfx->clear(kColorWhite);
     spr->drawSprites();
 
-	lm->iterate(&projectiles, update_projectiles);
+	lm->iterate(&projectiles, draw_projectiles);
+
+	// ammo display
+	{
+		int center_x = SCREEN_WIDTH / 2;
+		int center_y = SCREEN_HEIGHT / 2;
+		int width = 50;
+		int height = 50;
+		int inner_width = remap(0, 100, 0, width, player.ammo_percent);
+		int inner_height = remap(0, 100, 0, height, player.ammo_percent);
+
+		gfx->drawEllipse(center_x - width / 2, center_y - height / 2, width, height,  1, 0, 360, kColorBlack);
+		gfx->fillEllipse(center_x - inner_width / 2, center_y - inner_height / 2, inner_width, inner_height, 0, 360, kColorBlack);
+	}
 
     sys->drawFPS(0,0);
 

@@ -24,7 +24,8 @@ VPATH += src
 SRC = src/main.c \
 		src/dooter.c \
 		src/list.c \
-		src/projectile.c
+		src/projectile.c \
+		src/game_math.c
 
 # List all user directories here
 UINCDIR = 

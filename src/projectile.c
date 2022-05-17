@@ -6,6 +6,9 @@ Projectile* new_projectile(int x, int y, int velocity) {
     to_return->x = x;
     to_return->y = y;
     to_return->velocity = velocity;
+    to_return->frames_to_flip = 5;
+    to_return->frames_since_flip = 0;
+    to_return->flipped = 0;
 
     return to_return;
 }
