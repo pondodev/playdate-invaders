@@ -150,15 +150,17 @@ static int update(void* userdata) {
 
 	// ammo display
 	{
-		int center_x = SCREEN_WIDTH / 2;
-		int center_y = SCREEN_HEIGHT / 2;
-		int width = 50;
-		int height = 50;
-		int inner_width = remap(0, 100, 0, width, player.ammo_percent);
-		int inner_height = remap(0, 100, 0, height, player.ammo_percent);
+		float x, y;
+		spr->getPosition(player.sprite, &x, &y);
+		int offset = 12;
+		int width = 4;
+		int height = 20;
+		int inner_height = remap(0, 100, 0, 20, player.ammo_percent);
 
-		gfx->drawEllipse(center_x - width / 2, center_y - height / 2, width, height,  1, 0, 360, kColorBlack);
-		gfx->fillEllipse(center_x - inner_width / 2, center_y - inner_height / 2, inner_width, inner_height, 0, 360, kColorBlack);
+		gfx->drawRect(x + offset, y - height / 2, width, height, kColorBlack);
+		gfx->drawRect(x - offset - width, y - height / 2, width, height, kColorBlack);
+		gfx->fillRect(x + offset, (y - height / 2) + (height - inner_height), width, inner_height, kColorBlack);
+		gfx->fillRect(x - offset - width, (y - height / 2) + (height - inner_height), width, inner_height, kColorBlack);
 	}
 
     sys->drawFPS(0,0);
