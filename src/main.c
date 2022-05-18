@@ -77,7 +77,7 @@ static void init(PlaydateAPI* pd) {
 static ListNodeAction update_projectiles(uint32_t index, void* data) {
 	Projectile* proj = (Projectile*)data;
 	move_projectile(proj);
-	if (proj->y < 0) return kRemove;
+	if (proj->position.y < 0) return kRemove;
 
 	return kNoAction;
 }
@@ -90,7 +90,7 @@ static ListNodeAction draw_projectiles(uint32_t index, void* data) {
 	}
 
 	LCDBitmapFlip flip = proj->flipped ? kBitmapFlippedX : kBitmapUnflipped;
-	gfx->drawBitmap(projectile_image, proj->x, proj->y, flip);
+	gfx->drawBitmap(projectile_image, proj->position.x, proj->position.y, flip);
 
 	return kNoAction;
 }
@@ -108,36 +108,30 @@ static int update(void* userdata) {
 	}
 
     // move the sprite around
-	{
-		PDButtons current, pushed;
-		sys->getButtonState(&current, &pushed, NULL);
+	PDButtons current, pushed;
+	sys->getButtonState(&current, &pushed, NULL);
 
-		int x = 0;
+	int move_vel = 0;
 
-		if (current & kButtonLeft) --x;
-		if (current & kButtonRight) ++x;
+	if (current & kButtonLeft) --move_vel;
+	if (current & kButtonRight) ++move_vel;
 
-		int spd = current & kButtonB ? player.run_speed : player.walk_speed;
-		spr->moveBy(player.sprite, x * spd, 0);
+	int spd = current & kButtonB ? player.run_speed : player.walk_speed;
+	move_vel *= spd;
+	Vec2 player_pos;
+	spr->getPosition(player.sprite, &player_pos.x, &player_pos.y);
+	player_pos.x += move_vel;
 
-		if (pushed & kButtonA && player.ammo_percent >= player.ammo_consumption_rate) {
-			player.ammo_percent -= player.ammo_consumption_rate;
+	// screen wrapping
+	if (player_pos.x < 0) player_pos.x += SCREEN_WIDTH;
+	else if (player_pos.x > SCREEN_WIDTH) player_pos.x -= SCREEN_WIDTH;
 
-			float x, y;
-			spr->getPosition(player.sprite, &x, &y);
-			Projectile* new_proj = new_projectile((int)x, (int)y, 5);
-			lm->add(&projectiles, new_proj);
-		}
-	}
+	spr->moveTo(player.sprite, player_pos.x, player_pos.y);
 
-	// wrap around screen
-	{
-		float x, y;
-		spr->getPosition(player.sprite, &x, &y);
-
-		if (x < 0) x += SCREEN_WIDTH;
-		if (x > SCREEN_WIDTH) x -= SCREEN_WIDTH;
-		pd->sprite->moveTo(player.sprite, x, y);
+	if (pushed & kButtonA && player.ammo_percent >= player.ammo_consumption_rate) {
+		player.ammo_percent -= player.ammo_consumption_rate;
+		Projectile* new_proj = new_projectile(player_pos.x, player_pos.y, 5);
+		lm->add(&projectiles, new_proj);
 	}
 
 	lm->iterate(&projectiles, update_projectiles);
@@ -150,17 +144,33 @@ static int update(void* userdata) {
 
 	// ammo display
 	{
-		float x, y;
-		spr->getPosition(player.sprite, &x, &y);
 		int offset = 12;
 		int width = 4;
 		int height = 20;
-		int inner_height = remap(0, 100, 0, 20, player.ammo_percent);
+		int fill_height = remap(0, 100, 0, 20, player.ammo_percent);
 
-		gfx->drawRect(x + offset, y - height / 2, width, height, kColorBlack);
-		gfx->drawRect(x - offset - width, y - height / 2, width, height, kColorBlack);
-		gfx->fillRect(x + offset, (y - height / 2) + (height - inner_height), width, inner_height, kColorBlack);
-		gfx->fillRect(x - offset - width, (y - height / 2) + (height - inner_height), width, inner_height, kColorBlack);
+		Vec2 left_display = (Vec2) {
+			.x = player_pos.x - offset - width,
+			.y = player_pos.y - height / 2
+		};
+		Vec2 right_display = (Vec2) {
+			.x = player_pos.x + offset,
+			.y = left_display.y
+		};
+
+		Vec2 left_display_fill = (Vec2) {
+			.x = left_display.x,
+			.y = left_display.y + (height - fill_height)
+		};
+		Vec2 right_display_fill = (Vec2) {
+			.x = right_display.x,
+			.y = right_display.y + (height - fill_height)
+		};
+
+		gfx->drawRect(left_display.x, left_display.y, width, height, kColorBlack);
+		gfx->drawRect(right_display.x, right_display.y, width, height, kColorBlack);
+		gfx->fillRect(left_display_fill.x, left_display_fill.y, width, fill_height, kColorBlack);
+		gfx->fillRect(right_display_fill.x, right_display_fill.y, width, fill_height, kColorBlack);
 	}
 
     sys->drawFPS(0,0);

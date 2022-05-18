@@ -3,9 +3,10 @@
 
 #include <stdlib.h>
 
+#include "game_math.h"
+
 typedef struct Projectile {
-    int x;
-    int y;
+    Vec2 position;
     int velocity;
     int frames_to_flip;
     int frames_since_flip;
