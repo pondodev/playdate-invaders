@@ -20,6 +20,7 @@ typedef struct PlayerInfo {
 	float		ammo_percent;
 	float		ammo_reload_rate;		// how much % 1 degree of crank rotation reloads
 	float		ammo_consumption_rate;	// how much % firing once uses up
+	Vec2		position;
 } PlayerInfo;
 
 PlayerInfo player;
@@ -52,7 +53,10 @@ static void init(PlaydateAPI* pd) {
     spr->setImage(player.sprite, player.image, kBitmapUnflipped);
 	int player_height;
 	gfx->getBitmapData(player.image, NULL, &player_height, NULL, NULL, NULL);
-    spr->moveTo(player.sprite, SCREEN_WIDTH / 2, SCREEN_HEIGHT - player_height);
+
+	player.position.x = SCREEN_WIDTH / 2;
+	player.position.y = SCREEN_HEIGHT - player_height;
+    spr->moveTo(player.sprite, player.position.x, player.position.y);
 
 	player.walk_speed = 2;
 	player.run_speed = 5;
@@ -118,19 +122,17 @@ static int update(void* userdata) {
 
 	int spd = current & kButtonB ? player.run_speed : player.walk_speed;
 	move_vel *= spd;
-	Vec2 player_pos;
-	spr->getPosition(player.sprite, &player_pos.x, &player_pos.y);
-	player_pos.x += move_vel;
+	player.position.x += move_vel;
 
 	// screen wrapping
-	if (player_pos.x < 0) player_pos.x += SCREEN_WIDTH;
-	else if (player_pos.x > SCREEN_WIDTH) player_pos.x -= SCREEN_WIDTH;
+	if (player.position.x < 0) player.position.x += SCREEN_WIDTH;
+	else if (player.position.x > SCREEN_WIDTH) player.position.x -= SCREEN_WIDTH;
 
-	spr->moveTo(player.sprite, player_pos.x, player_pos.y);
+	spr->moveTo(player.sprite, player.position.x, player.position.y);
 
 	if (pushed & kButtonA && player.ammo_percent >= player.ammo_consumption_rate) {
 		player.ammo_percent -= player.ammo_consumption_rate;
-		Projectile* new_proj = new_projectile(player_pos.x, player_pos.y, 5);
+		Projectile* new_proj = new_projectile(player.position.x, player.position.y, 5);
 		lm->add(&projectiles, new_proj);
 	}
 
@@ -150,11 +152,11 @@ static int update(void* userdata) {
 		int fill_height = remap(0, 100, 0, 20, player.ammo_percent);
 
 		Vec2 left_display = (Vec2) {
-			.x = player_pos.x - offset - width,
-			.y = player_pos.y - height / 2
+			.x = player.position.x - offset - width,
+			.y = player.position.y - height / 2
 		};
 		Vec2 right_display = (Vec2) {
-			.x = player_pos.x + offset,
+			.x = player.position.x + offset,
 			.y = left_display.y
 		};
 
