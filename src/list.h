@@ -35,6 +35,7 @@ typedef struct ListManager {
     int     (*dequeue)  (List* list, void** data_ptr);
     void    (*iterate)  (List* list, iterator_callback callback);
     int     (*at)       (List* list, uint32_t index, void** data_ptr);
+    void    (*destroy)  (List*);
 } ListManager;
 
 const ListManager* get_list_manager(void);

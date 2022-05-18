@@ -39,6 +39,7 @@ int eventHandler(PlaydateAPI* pd, PDSystemEvent event, uint32_t arg) {
     (void)arg; // arg is currently only used for event = kEventKeyPressed
 
     if (event == kEventInit) init(pd);
+	if (event == kEventTerminate) game_terminated();
 
     return 0;
 }
@@ -182,6 +183,14 @@ static void draw() {
 	}
 
     sys->drawFPS(0,0);
+}
+
+static void game_terminated() {
+	// probably don't need to, but it's just polite :)
+	lm->destroy(&projectiles);
+	spr->freeSprite(player.sprite);
+	gfx->freeBitmap(player.image);
+	gfx->freeBitmap(projectile_image);
 }
 
 static ListNodeAction update_projectiles(uint32_t index, void* data) {

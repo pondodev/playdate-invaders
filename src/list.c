@@ -150,13 +150,23 @@ static int at(List* list, uint32_t index, void** data_ptr) {
     return 1;
 }
 
+static void destroy(List* list) {
+    ListNode* node = list->head;
+    while (node != NULL) {
+        free(node->data);
+        free(node);
+        node = node->next;
+    }
+}
+
 static const ListManager lm = {
     .init = init,
     .add = add,
     .remove = remove,
     .pop = pop,
     .iterate = iterate,
-    .at = at
+    .at = at,
+    .destroy = destroy
 };
 
 const ListManager* get_list_manager() {
