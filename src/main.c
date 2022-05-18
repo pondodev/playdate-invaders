@@ -23,7 +23,15 @@ typedef struct PlayerInfo {
 	Vec2		position;
 } PlayerInfo;
 
+typedef struct PlayerInput {
+	int			firing;
+	int			running;
+	int			horizontal_axis;
+	float		crank_delta;
+} PlayerInput;
+
 PlayerInfo player;
+PlayerInput input;
 
 LCDBitmap* projectile_image = NULL;
 
@@ -64,6 +72,11 @@ static void init(PlaydateAPI* pd) {
 	player.ammo_reload_rate = 0.1f;
 	player.ammo_consumption_rate = 10.f;
 
+	input.firing = 0;
+	input.running = 0;
+	input.horizontal_axis = 0;
+	input.crank_delta = 0.f;
+
 	projectile_image = gfx->loadBitmap("Images/projectile", &err);
 	if (projectile_image == NULL) {
 		sys->error("failed to load projectile bitmap: %s", err);
@@ -78,51 +91,45 @@ static void init(PlaydateAPI* pd) {
     sys->setUpdateCallback(update, pd);
 }
 
-static ListNodeAction update_projectiles(uint32_t index, void* data) {
-	Projectile* proj = (Projectile*)data;
-	move_projectile(proj);
-	if (proj->position.y < 0) return kRemove;
-
-	return kNoAction;
-}
-
-static ListNodeAction draw_projectiles(uint32_t index, void* data) {
-	Projectile* proj = (Projectile*)data;
-	if (++proj->frames_since_flip == proj->frames_to_flip) {
-		proj->frames_since_flip = 0;
-		proj->flipped = !proj->flipped;
-	}
-
-	LCDBitmapFlip flip = proj->flipped ? kBitmapFlippedX : kBitmapUnflipped;
-	gfx->drawBitmap(projectile_image, proj->position.x, proj->position.y, flip);
-
-	return kNoAction;
-}
-
 static int update(void* userdata) {
     PlaydateAPI* pd = userdata;
 
-	// ammo reloading
-	if (! sys->isCrankDocked()) {
-		float angle_delta = sys->getCrankChange();
-		if (angle_delta > 0.f) {
-			player.ammo_percent += angle_delta * player.ammo_reload_rate;
-			player.ammo_percent = player.ammo_percent < 100.f ? player.ammo_percent : 100.f;
-		}
-	}
+	process_input();
+	process_player();
+	lm->iterate(&projectiles, update_projectiles);
+	draw();
 
-    // move the sprite around
+    return 1;
+}
+
+static void process_input() {
+	input.horizontal_axis = 0;
+	input.crank_delta = 0.f;
+
 	PDButtons current, pushed;
 	sys->getButtonState(&current, &pushed, NULL);
 
-	int move_vel = 0;
+	input.firing = pushed & kButtonA;
 
-	if (current & kButtonLeft) --move_vel;
-	if (current & kButtonRight) ++move_vel;
+	input.running = current & kButtonB;
 
-	int spd = current & kButtonB ? player.run_speed : player.walk_speed;
-	move_vel *= spd;
-	player.position.x += move_vel;
+	if (current & kButtonLeft) --input.horizontal_axis;
+	if (current & kButtonRight) ++input.horizontal_axis;
+
+	if (! sys->isCrankDocked()) {
+		float angle_delta = sys->getCrankChange();
+		if (angle_delta > 0.1f) input.crank_delta = angle_delta;
+	}
+}
+
+static void process_player() {
+	if (input.crank_delta > 0.f) {
+		player.ammo_percent += input.crank_delta * player.ammo_reload_rate;
+		player.ammo_percent = player.ammo_percent < 100.f ? player.ammo_percent : 100.f;
+	}
+
+	int speed_multiplier = input.running ? player.run_speed : player.walk_speed;
+	player.position.x += input.horizontal_axis * speed_multiplier;
 
 	// screen wrapping
 	if (player.position.x < 0) player.position.x += SCREEN_WIDTH;
@@ -130,15 +137,14 @@ static int update(void* userdata) {
 
 	spr->moveTo(player.sprite, player.position.x, player.position.y);
 
-	if (pushed & kButtonA && player.ammo_percent >= player.ammo_consumption_rate) {
+	if (input.firing && player.ammo_percent >= player.ammo_consumption_rate) {
 		player.ammo_percent -= player.ammo_consumption_rate;
 		Projectile* new_proj = new_projectile(player.position.x, player.position.y, 5);
 		lm->add(&projectiles, new_proj);
 	}
+}
 
-	lm->iterate(&projectiles, update_projectiles);
-
-    // draw stuff
+static void draw() {
     gfx->clear(kColorWhite);
     spr->drawSprites();
 
@@ -176,6 +182,25 @@ static int update(void* userdata) {
 	}
 
     sys->drawFPS(0,0);
+}
 
-    return 1;
+static ListNodeAction update_projectiles(uint32_t index, void* data) {
+	Projectile* proj = (Projectile*)data;
+	move_projectile(proj);
+	if (proj->position.y < 0) return kRemove;
+
+	return kNoAction;
+}
+
+static ListNodeAction draw_projectiles(uint32_t index, void* data) {
+	Projectile* proj = (Projectile*)data;
+	if (++proj->frames_since_flip == proj->frames_to_flip) {
+		proj->frames_since_flip = 0;
+		proj->flipped = !proj->flipped;
+	}
+
+	LCDBitmapFlip flip = proj->flipped ? kBitmapFlippedX : kBitmapUnflipped;
+	gfx->drawBitmap(projectile_image, proj->position.x, proj->position.y, flip);
+
+	return kNoAction;
 }
