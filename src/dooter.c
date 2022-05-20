@@ -44,3 +44,7 @@ void init_sound_engine(PlaydateAPI* pd) {
 void play_music() {
     seq->play(music, NULL, NULL);
 }
+
+void pause_music() {
+    seq->stop(music);
+}

@@ -38,6 +38,8 @@ LCDBitmap* projectile_image = NULL;
 SoundChannel* sound_effects = NULL;
 PDSynth* projectile_sound = NULL;
 
+PDMenuItem* menu_music_enabled = NULL;
+
 int eventHandler(PlaydateAPI* pd, PDSystemEvent event, uint32_t arg) {
     (void)arg; // arg is currently only used for event = kEventKeyPressed
 
@@ -52,6 +54,9 @@ static void init(PlaydateAPI* pd) {
     spr = pd->sprite;
     gfx = pd->graphics;
     snd = pd->sound;
+
+    // menu items
+    menu_music_enabled = sys->addCheckmarkMenuItem("music", 1, on_music_menu_change, NULL);
 
     // initialise player stuffs
     const char* err;
@@ -113,6 +118,11 @@ static void init(PlaydateAPI* pd) {
     snd->synth->setFrequencyModulator(projectile_sound, (PDSynthSignalValue*)projectile_sound_lfo);
 
     sys->setUpdateCallback(update, pd);
+}
+
+static void on_music_menu_change(void* userdata) {
+    int playing = sys->getMenuItemValue(menu_music_enabled);
+    playing ? play_music() : pause_music();
 }
 
 static int update(void* userdata) {

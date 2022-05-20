@@ -15,6 +15,7 @@
 #include "game_math.h"
 
 static void init(PlaydateAPI* pd);
+static void on_music_menu_change(void* userdata);
 static int update(void* userdata);
 static void process_input(void);
 static void process_player(void);
