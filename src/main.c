@@ -92,19 +92,25 @@ static void init(PlaydateAPI* pd) {
     lm = get_list_manager();
     projectiles = lm->init();
 
+    // TODO: my god this audio stuff needs some refactoring
     sound_effects = snd->channel->newChannel();
     projectile_sound = snd->synth->newSynth();
     snd->channel->addSource(sound_effects, (SoundSource*)projectile_sound);
-    snd->channel->setVolume(sound_effects, 1.f);
-    snd->addChannel(sound_effects);;
+    snd->channel->setVolume(sound_effects, 0.1f);
+    snd->addChannel(sound_effects);
 
-    snd->synth->setWaveform(projectile_sound, kWaveformSquare);
+    snd->synth->setWaveform(projectile_sound, kWaveformSawtooth);
     snd->synth->setAttackTime(projectile_sound, 0.f);
     snd->synth->setDecayTime(projectile_sound, 0.f);
     snd->synth->setSustainLevel(projectile_sound, 1.f);
     snd->synth->setReleaseTime(projectile_sound, 0.1f);
-    snd->synth->setVolume(projectile_sound, 1.f, 1.f);
-    //snd->channel->addSource(snd->getDefaultChannel(), (SoundSource*)projectile_sound);
+    BitCrusher* crusher = snd->effect->bitcrusher->newBitCrusher();
+    snd->effect->bitcrusher->setUndersampling(crusher, 0.75f);
+    PDSynthLFO* projectile_sound_lfo = snd->lfo->newLFO(kLFOTypeSawtoothDown);
+    snd->lfo->setRetrigger(projectile_sound_lfo, 1);
+    snd->lfo->setRate(projectile_sound_lfo, 2.5f);
+    snd->channel->addEffect(sound_effects, (SoundEffect*)crusher);
+    snd->synth->setFrequencyModulator(projectile_sound, (PDSynthSignalValue*)projectile_sound_lfo);
 
     sys->setUpdateCallback(update, pd);
 }
@@ -156,12 +162,11 @@ static void process_player() {
     spr->moveTo(player.sprite, player.position.x, player.position.y);
 
     if (input.firing && player.ammo_percent >= player.ammo_consumption_rate) {
+        snd->synth->playNote(projectile_sound, 700.f, 1.f, 0.1f, 0);
+
         player.ammo_percent -= player.ammo_consumption_rate;
         Projectile* new_proj = new_projectile(player.position.x, player.position.y, 5);
         lm->add(&projectiles, new_proj);
-
-        snd->synth->playNote(projectile_sound, 700.f, 1.f, 0.1f, 0);
-        //snd->synth->playMIDINote(projectile_sound, 60, 100.f, 0.1f, 0);
     }
 }
 
