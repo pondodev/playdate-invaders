@@ -137,11 +137,14 @@ static void process_input() {
 }
 
 static void process_player() {
-    if (input.crank_delta > 0.f) {
+    if (input.crank_delta > 0.1f) {
         player.ammo_percent += input.crank_delta * player.ammo_reload_rate;
         player.ammo_percent = player.ammo_percent < 100.f ? player.ammo_percent : 100.f;
 
-        play_reload_sound(player.ammo_percent);
+        // this just stops the sound from playing too long after the player lets go of
+        // the crank, or when they accidentally nudge it
+        if (input.crank_delta > 1.f)
+            play_reload_sound(player.ammo_percent);
     }
 
     int speed_multiplier = input.running ? player.run_speed : player.walk_speed;

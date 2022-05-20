@@ -35,7 +35,7 @@ void init_sound_effects(PlaydateAPI* pd) {
     snd->synth->setDecayTime(projectile_sound, 0.f);
     snd->synth->setSustainLevel(projectile_sound, 1.f);
     snd->synth->setReleaseTime(projectile_sound, 0.1f);
-    snd->synth->setVolume(projectile_sound, 0.3f, 0.3f);
+    snd->synth->setVolume(projectile_sound, 0.2f, 0.2f);
 
     snd->lfo->setRetrigger(projectile_lfo, 1);
     snd->lfo->setRate(projectile_lfo, 2.5f);
@@ -50,7 +50,7 @@ void init_sound_effects(PlaydateAPI* pd) {
     snd->synth->setAttackTime(reload_sound, 0.f);
     snd->synth->setDecayTime(reload_sound, 0.f);
     snd->synth->setSustainLevel(reload_sound, 0.1f);
-    snd->synth->setReleaseTime(reload_sound, 0.1f);
+    snd->synth->setReleaseTime(reload_sound, 0.f);
 
     snd->channel->addSource(channel, (SoundSource*)reload_sound);
 }
