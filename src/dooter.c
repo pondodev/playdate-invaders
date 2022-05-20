@@ -7,7 +7,7 @@ static const struct playdate_sound_synth* synth = NULL;
 
 SoundSequence* music = NULL;
 PDSynthInstrument* instrument = NULL;
-static const float MUSIC_VOLUME = 1.f;
+static const float MUSIC_VOLUME = 0.8f;
 
 // if we have more than 100 tracks or synths, we probably have other problems
 size_t track_count = 0;

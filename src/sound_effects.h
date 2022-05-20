@@ -10,5 +10,6 @@ void free_sound_effects(void);
 void mute_sound_effects(void);
 void unmute_sound_effects(void);
 void play_projectile_sound(void);
+void play_reload_sound(float percent);
 
 #endif

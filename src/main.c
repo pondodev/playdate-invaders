@@ -140,6 +140,8 @@ static void process_player() {
     if (input.crank_delta > 0.f) {
         player.ammo_percent += input.crank_delta * player.ammo_reload_rate;
         player.ammo_percent = player.ammo_percent < 100.f ? player.ammo_percent : 100.f;
+
+        play_reload_sound(player.ammo_percent);
     }
 
     int speed_multiplier = input.running ? player.run_speed : player.walk_speed;
