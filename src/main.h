@@ -13,15 +13,21 @@
 #include "list.h"
 #include "projectile.h"
 #include "game_math.h"
+#include "sound_effects.h"
 
+// game loop functions
 static void init(PlaydateAPI* pd);
-static void on_music_menu_change(void* userdata);
 static int update(void* userdata);
 static void process_input(void);
 static void process_player(void);
 static void draw(void);
 static void game_terminated(void);
 
+// menu callbacks
+static void on_menu_music_change(void* userdata);
+static void on_menu_sound_effects_change(void* userdata);
+
+// list callbacks
 static ListNodeAction update_projectiles(uint32_t index, void* data);
 static ListNodeAction draw_projectiles(uint32_t index, void* data);
 

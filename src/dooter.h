@@ -3,7 +3,8 @@
 
 #include "pd_api.h"
 
-void init_sound_engine(PlaydateAPI* pd);
+void init_music(PlaydateAPI* pd);
+void free_music(void);
 void play_music(void);
 void pause_music(void);
 

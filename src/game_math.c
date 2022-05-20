@@ -12,3 +12,11 @@ float remap(float in_min, float in_max, float out_min, float out_max, float val)
     float t = inverse_lerp(in_min, in_max, val);
     return lerp(out_min, out_max, t);
 }
+
+float frand(float min, float max) {
+    return (((float)rand() / (float)(RAND_MAX)) * max) + min;
+}
+
+int irand(int min, int max) {
+    return (rand() % (max - min + 1)) + min;
+}

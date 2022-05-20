@@ -6,8 +6,16 @@ static const struct playdate_sound_sequence* seq = NULL;
 static const struct playdate_sound_synth* synth = NULL;
 
 SoundSequence* music = NULL;
+PDSynthInstrument* instrument = NULL;
+static const float MUSIC_VOLUME = 1.f;
 
-void init_sound_engine(PlaydateAPI* pd) {
+// if we have more than 100 tracks or synths, we probably have other problems
+size_t track_count = 0;
+SequenceTrack* tracks[100];
+size_t synth_count = 0;
+PDSynth* synths[100];
+
+void init_music(PlaydateAPI* pd) {
     sys = pd->system;
     snd = pd->sound;
     seq = pd->sound->sequence;
@@ -19,25 +27,42 @@ void init_sound_engine(PlaydateAPI* pd) {
 
     seq->setLoops(music, 0, seq->getLength(music), 0);
 
-    PDSynthInstrument* inst = snd->instrument->newInstrument();
-    snd->instrument->setVolume(inst, 0.2, 0.2);
-    snd->channel->addSource(snd->getDefaultChannel(), (SoundSource*)inst);
+    instrument = snd->instrument->newInstrument();
+    snd->instrument->setVolume(instrument, MUSIC_VOLUME, MUSIC_VOLUME);
+    snd->channel->addSource(snd->getDefaultChannel(), (SoundSource*)instrument);
 
     int n = seq->getTrackCount(music);
 
-    for (int i = 0; i < n; ++i) {
-        SequenceTrack* track = pd->sound->sequence->getTrackAtIndex(music, i);
-        snd->track->setInstrument(track, inst);
+    for (; track_count < n; ++track_count) {
+        SequenceTrack* track = pd->sound->sequence->getTrackAtIndex(music, track_count);
+        snd->track->setInstrument(track, instrument);
 
-        for (int p = snd->track->getPolyphony(track); p > 0; --p) {
+        tracks[track_count] = track;
+
+        int polyphony = snd->track->getPolyphony(track);
+        for (int i = 0; i < polyphony; ++i) {
             PDSynth* s = synth->newSynth();
             synth->setWaveform(s, kWaveformSawtooth);
-            synth->setAttackTime(s, 0);
-            synth->setDecayTime(s, 0.1);
-            synth->setSustainLevel(s, 0);
-            synth->setReleaseTime(s, 0.1);
-            snd->instrument->addVoice(inst, s, 0, 127, 0);
+            synth->setAttackTime(s, 0.f);
+            synth->setDecayTime(s, 0.1f);
+            synth->setSustainLevel(s, 0.f);
+            synth->setReleaseTime(s, 0.1f);
+            snd->instrument->addVoice(instrument, s, 0, 127, 0);
+
+            synths[synth_count] = s;
+            ++synth_count;
         }
+    }
+}
+
+void free_music() {
+    seq->freeSequence(music);
+    snd->instrument->freeInstrument(instrument);
+    for (int i = 0; i < track_count; ++i) {
+        snd->track->freeTrack(tracks[i]);
+    }
+    for (int i = 0; i < synth_count; ++i) {
+        synth->freeSynth(synths[i]);
     }
 }
 
