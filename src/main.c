@@ -34,6 +34,7 @@ typedef struct MenuItems {
     PDMenuItem* sound_effects_enabled;
 } MenuItems;
 
+SaveData player_save_data;
 PlayerInfo player;
 PlayerInput input;
 MenuItems menu;
@@ -44,7 +45,7 @@ int eventHandler(PlaydateAPI* pd, PDSystemEvent event, uint32_t arg) {
     (void)arg; // arg is currently only used for event = kEventKeyPressed
 
     if (event == kEventInit) init(pd);
-    if (event == kEventTerminate) game_terminated();
+    if (event == kEventTerminate) game_terminated(pd);
 
     return 0;
 }
@@ -54,9 +55,7 @@ static void init(PlaydateAPI* pd) {
     spr = pd->sprite;
     gfx = pd->graphics;
 
-    // menu items
-    menu.music_enabled = sys->addCheckmarkMenuItem("music", 1, on_menu_music_change, NULL);
-    menu.sound_effects_enabled = sys->addCheckmarkMenuItem("sound fx", 1, on_menu_sound_effects_change, NULL);
+    player_save_data = load_data(pd);
 
     // player defaults
     const char* err;
@@ -96,11 +95,16 @@ static void init(PlaydateAPI* pd) {
     lm = get_list_manager();
     projectiles = lm->init();
 
-    // other
+    // sound
     init_music(pd);
     play_music();
-
     init_sound_effects(pd);
+
+    // menu items
+    menu.music_enabled = sys->addCheckmarkMenuItem("music", player_save_data.music_enabled, on_menu_music_change, NULL);
+    menu.sound_effects_enabled = sys->addCheckmarkMenuItem("sound fx", player_save_data.sound_effects_enabled, on_menu_sound_effects_change, NULL);
+    on_menu_music_change(NULL);
+    on_menu_sound_effects_change(NULL);
 
     sys->setUpdateCallback(update, pd);
 }
@@ -203,7 +207,7 @@ static void draw() {
     sys->drawFPS(0,0);
 }
 
-static void game_terminated() {
+static void game_terminated(PlaydateAPI* pd) {
     // probably don't need to, but it's just polite :)
     lm->destroy(&projectiles);
     spr->freeSprite(player.sprite);
@@ -211,6 +215,8 @@ static void game_terminated() {
     gfx->freeBitmap(projectile_image);
     free_music();
     free_sound_effects();
+
+    save_data(pd, player_save_data);
 }
 
 static void on_menu_music_change(void* userdata) {

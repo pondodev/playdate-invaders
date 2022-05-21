@@ -14,6 +14,7 @@
 #include "projectile.h"
 #include "game_math.h"
 #include "sound_effects.h"
+#include "save.h"
 
 // game loop functions
 static void init(PlaydateAPI* pd);
@@ -21,7 +22,7 @@ static int update(void* userdata);
 static void process_input(void);
 static void process_player(void);
 static void draw(void);
-static void game_terminated(void);
+static void game_terminated(PlaydateAPI* pd);
 
 // menu callbacks
 static void on_menu_music_change(void* userdata);
