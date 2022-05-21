@@ -65,6 +65,7 @@ static void init(PlaydateAPI* pd) {
     }
 
     player.sprite = spr->newSprite();
+    spr->setTag(player.sprite, kTagPlayer);
     spr->addSprite(player.sprite);
     spr->setImage(player.sprite, player.image, kBitmapUnflipped);
     int player_height;
@@ -79,6 +80,9 @@ static void init(PlaydateAPI* pd) {
     player.ammo_percent = 100.f;
     player.ammo_reload_rate = 0.1f;
     player.ammo_consumption_rate = 10.f;
+
+    // invaders
+    init_invader_data(pd, game_lost);
 
     // input defaults
     input.firing = 0;
@@ -115,6 +119,7 @@ static int update(void* userdata) {
     process_player();
     lm->iterate(&projectiles, update_projectiles);
     draw();
+    update_invaders();
 
     return 1;
 }
@@ -214,6 +219,7 @@ static void game_terminated(PlaydateAPI* pd) {
     gfx->freeBitmap(projectile_image);
     free_music();
     free_sound_effects();
+    free_invaders();
 
     save_data(pd, player_save_data);
 }
@@ -249,4 +255,8 @@ static ListNodeAction draw_projectiles(uint32_t index, void* data) {
     gfx->drawBitmap(projectile_image, proj->position.x, proj->position.y, flip);
 
     return kNoAction;
+}
+
+static void game_lost() {
+    sys->logToConsole("TODO: implement game lose state!");
 }

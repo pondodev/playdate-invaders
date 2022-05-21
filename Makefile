@@ -27,7 +27,8 @@ SRC = src/main.c \
 		src/projectile.c \
 		src/game_math.c \
 		src/sound_effects.c \
-		src/save.c
+		src/save.c \
+		src/invader.c
 
 # List all user directories here
 UINCDIR = 
