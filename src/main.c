@@ -222,11 +222,13 @@ static void game_terminated(PlaydateAPI* pd) {
 static void on_menu_music_change(void* userdata) {
     int playing = sys->getMenuItemValue(menu.music_enabled);
     playing ? play_music() : pause_music();
+    player_save_data.music_enabled = playing;
 }
 
 static void on_menu_sound_effects_change(void* userdata) {
-    int muted = ! sys->getMenuItemValue(menu.sound_effects_enabled);
-    muted ? mute_sound_effects() : unmute_sound_effects();
+    int enabled = sys->getMenuItemValue(menu.sound_effects_enabled);
+    enabled ? unmute_sound_effects() : mute_sound_effects();
+    player_save_data.sound_effects_enabled = enabled;
 }
 
 static ListNodeAction update_projectiles(uint32_t index, void* data) {

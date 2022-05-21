@@ -14,19 +14,20 @@ static const char* SAVE_FILE_NAME = "savefile.sav";
 
 void save_data(PlaydateAPI* pd, SaveData data) {
     char buffer[MAX_SAVE_FILE_SIZE];
+    buffer[0] = '\0';
     size_t actual_size = 0;
 
     char music[MAX_PROPERTY_LENGTH];
     snprintf(music, MAX_PROPERTY_LENGTH, "music:%s\n", data.music_enabled ? "true" : "false");
     strncat(buffer, music, MAX_PROPERTY_LENGTH);
     actual_size += strnlen(music, MAX_PROPERTY_LENGTH);
-    pd->system->logToConsole("music: %s", music);
+    pd->system->logToConsole("music: %d", data.music_enabled);
 
     char fx[MAX_PROPERTY_LENGTH];
     snprintf(fx, MAX_PROPERTY_LENGTH, "fx:%s\n", data.sound_effects_enabled ? "true" : "false");
     strncat(buffer, fx, MAX_PROPERTY_LENGTH);
     actual_size += strnlen(fx, MAX_PROPERTY_LENGTH);
-    pd->system->logToConsole("fx: %s", fx);
+    pd->system->logToConsole("fx: %d", data.sound_effects_enabled);
 
     SDFile* save_file = pd->file->open(SAVE_FILE_NAME, kFileWrite);
     if (! save_file)
@@ -71,9 +72,6 @@ SaveData load_data(PlaydateAPI* pd) {
 
         free(properties[i]);
     }
-
-    pd->system->logToConsole("music: %d", to_return.music_enabled);
-    pd->system->logToConsole("fx: %d", to_return.sound_effects_enabled);
 
     pd->file->close(save_file);
 
