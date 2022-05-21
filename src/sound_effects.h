@@ -3,9 +3,10 @@
 
 #include "pd_api.h"
 
+#include "globals.h"
 #include "game_math.h"
 
-void init_sound_effects(PlaydateAPI* pd);
+void init_sound_effects(void);
 void free_sound_effects(void);
 void mute_sound_effects(void);
 void unmute_sound_effects(void);

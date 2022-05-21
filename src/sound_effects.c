@@ -1,7 +1,5 @@
 #include "sound_effects.h"
 
-static const struct playdate_sound* snd = NULL;
-
 static SoundChannel* channel = NULL;
 static BitCrusher* crusher = NULL;
 static int muted = 0;
@@ -13,9 +11,7 @@ static PDSynth* reload_sound = NULL;
 
 static const float CHANNEL_VOLUME = 1.f;
 
-void init_sound_effects(PlaydateAPI* pd) {
-    snd = pd->sound;
-
+void init_sound_effects() {
     // channel setup
     channel = snd->channel->newChannel();
     crusher = snd->effect->bitcrusher->newBitCrusher();

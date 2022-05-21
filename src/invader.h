@@ -2,8 +2,9 @@
 #define INVADER_H
 
 #include "pd_api.h"
-#include "game_math.h"
+
 #include "globals.h"
+#include "game_math.h"
 
 typedef struct Invader {
     LCDSprite* sprite;
@@ -13,7 +14,7 @@ typedef struct Invader {
 
 typedef void (*GameLostCallback)(void);
 
-void init_invader_data(PlaydateAPI* playdate, GameLostCallback callback);
+void init_invader_data(GameLostCallback callback);
 void update_invaders(void);
 void free_invaders(void);
 

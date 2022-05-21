@@ -3,17 +3,21 @@
 
 #include <stdlib.h>
 
+#include "pd_api.h"
+
+#include "globals.h"
 #include "game_math.h"
 
 typedef struct Projectile {
+    LCDSprite* sprite;
     Vec2 position;
     int velocity;
-    int frames_to_flip;
     int frames_since_flip;
     int flipped;
 } Projectile;
 
+void init_projectiles(void);
 Projectile* new_projectile(int x, int y, int velocity);
-void move_projectile(Projectile* projectile);
+void update_projectile(Projectile* projectile);
 
 #endif

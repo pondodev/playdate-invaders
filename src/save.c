@@ -12,7 +12,7 @@ static const size_t MAX_PROPERTY_KEY_LENGTH = (MAX_PROPERTY_LENGTH / 10) * 1;
 static const size_t MAX_PROPERTY_VALUE_LENGTH = (MAX_PROPERTY_LENGTH / 10) * 9;
 static const char* SAVE_FILE_NAME = "savefile.sav";
 
-void save_data(PlaydateAPI* pd, SaveData data) {
+void save_data(SaveData data) {
     char buffer[MAX_SAVE_FILE_SIZE];
     buffer[0] = '\0';
     size_t actual_size = 0;
@@ -21,25 +21,25 @@ void save_data(PlaydateAPI* pd, SaveData data) {
     snprintf(music, MAX_PROPERTY_LENGTH, "music:%s\n", data.music_enabled ? "true" : "false");
     strncat(buffer, music, MAX_PROPERTY_LENGTH);
     actual_size += strnlen(music, MAX_PROPERTY_LENGTH);
-    pd->system->logToConsole("music: %d", data.music_enabled);
+    sys->logToConsole("music: %d", data.music_enabled);
 
     char fx[MAX_PROPERTY_LENGTH];
     snprintf(fx, MAX_PROPERTY_LENGTH, "fx:%s\n", data.sound_effects_enabled ? "true" : "false");
     strncat(buffer, fx, MAX_PROPERTY_LENGTH);
     actual_size += strnlen(fx, MAX_PROPERTY_LENGTH);
-    pd->system->logToConsole("fx: %d", data.sound_effects_enabled);
+    sys->logToConsole("fx: %d", data.sound_effects_enabled);
 
     SDFile* save_file = pd->file->open(SAVE_FILE_NAME, kFileWrite);
     if (! save_file)
-        pd->system->error("failed to open file %s for writing", SAVE_FILE_NAME);
+        sys->error("failed to open file %s for writing", SAVE_FILE_NAME);
 
-    pd->system->logToConsole("OUTPUT: %s", buffer);
+    sys->logToConsole("OUTPUT: %s", buffer);
 
     pd->file->write(save_file, buffer, actual_size);
     pd->file->close(save_file);
 }
 
-SaveData load_data(PlaydateAPI* pd) {
+SaveData load_data() {
     SaveData to_return = DEFAULT_SAVE;
 
     SDFile* save_file = pd->file->open(SAVE_FILE_NAME, kFileReadData);

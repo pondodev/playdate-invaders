@@ -4,9 +4,14 @@
 __declspec(dllexport)
 #endif
 
-static const struct playdate_sys* sys = NULL;
-static const struct playdate_sprite* spr = NULL;
-static const struct playdate_graphics* gfx = NULL;
+const PlaydateAPI* pd = NULL;
+const struct playdate_sys* sys = NULL;
+const struct playdate_sprite* spr = NULL;
+const struct playdate_graphics* gfx = NULL;
+const struct playdate_sound* snd = NULL;
+const struct playdate_sound_sequence* seq = NULL;
+const struct playdate_sound_synth* synth = NULL;
+
 static const ListManager* lm = NULL;
 
 static List projectiles; 
@@ -50,12 +55,16 @@ int eventHandler(PlaydateAPI* pd, PDSystemEvent event, uint32_t arg) {
     return 0;
 }
 
-static void init(PlaydateAPI* pd) {
-    sys = pd->system;
-    spr = pd->sprite;
-    gfx = pd->graphics;
+static void init(PlaydateAPI* playdate) {
+    pd = playdate;
+    sys = playdate->system;
+    spr = playdate->sprite;
+    gfx = playdate->graphics;
+    snd = playdate->sound;
+    seq = playdate->sound->sequence;
+    synth = playdate->sound->synth;
 
-    player_save_data = load_data(pd);
+    player_save_data = load_data();
 
     // player defaults
     const char* err;
@@ -82,7 +91,7 @@ static void init(PlaydateAPI* pd) {
     player.ammo_consumption_rate = 10.f;
 
     // invaders
-    init_invader_data(pd, game_lost);
+    init_invader_data(game_lost);
 
     // input defaults
     input.firing = 0;
@@ -91,17 +100,13 @@ static void init(PlaydateAPI* pd) {
     input.crank_delta = 0.f;
 
     // projectiles
-    projectile_image = gfx->loadBitmap("Images/projectile", &err);
-    if (projectile_image == NULL) {
-        sys->error("failed to load projectile bitmap: %s", err);
-    }
-
+    init_projectiles();
     lm = get_list_manager();
     projectiles = lm->init();
 
     // sound
-    init_music(pd);
-    init_sound_effects(pd);
+    init_music();
+    init_sound_effects();
 
     // menu items
     menu.music_enabled = sys->addCheckmarkMenuItem("music", player_save_data.music_enabled, on_menu_music_change, NULL);
@@ -109,12 +114,10 @@ static void init(PlaydateAPI* pd) {
     on_menu_music_change(NULL);
     on_menu_sound_effects_change(NULL);
 
-    sys->setUpdateCallback(update, pd);
+    sys->setUpdateCallback(update, NULL);
 }
 
 static int update(void* userdata) {
-    PlaydateAPI* pd = userdata;
-
     process_input();
     process_player();
     lm->iterate(&projectiles, update_projectiles);
@@ -177,8 +180,6 @@ static void draw() {
     gfx->clear(kColorWhite);
     spr->drawSprites();
 
-    lm->iterate(&projectiles, draw_projectiles);
-
     // ammo display
     int offset = 12;
     int width = 4;
@@ -221,7 +222,7 @@ static void game_terminated(PlaydateAPI* pd) {
     free_sound_effects();
     free_invaders();
 
-    save_data(pd, player_save_data);
+    save_data(player_save_data);
 }
 
 static void on_menu_music_change(void* userdata) {
@@ -238,21 +239,11 @@ static void on_menu_sound_effects_change(void* userdata) {
 
 static ListNodeAction update_projectiles(uint32_t index, void* data) {
     Projectile* proj = (Projectile*)data;
-    move_projectile(proj);
-    if (proj->position.y < 0) return kRemove;
-
-    return kNoAction;
-}
-
-static ListNodeAction draw_projectiles(uint32_t index, void* data) {
-    Projectile* proj = (Projectile*)data;
-    if (++proj->frames_since_flip == proj->frames_to_flip) {
-        proj->frames_since_flip = 0;
-        proj->flipped = !proj->flipped;
+    update_projectile(proj);
+    if (proj->position.y < 0) {
+        spr->freeSprite(proj->sprite);
+        return kRemove;
     }
-
-    LCDBitmapFlip flip = proj->flipped ? kBitmapFlippedX : kBitmapUnflipped;
-    gfx->drawBitmap(projectile_image, proj->position.x, proj->position.y, flip);
 
     return kNoAction;
 }

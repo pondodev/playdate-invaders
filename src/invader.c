@@ -1,7 +1,5 @@
 #include "invader.h"
 
-static const PlaydateAPI* pd;
-
 #define INVADER_ROW_COUNT 5
 #define INVADER_COLUMN_COUNT 15
 #define MAX_INVADERS (INVADER_ROW_COUNT * INVADER_COLUMN_COUNT)
@@ -16,20 +14,19 @@ static LCDBitmap* invader_frames[2];
 static Invader invaders[MAX_INVADERS];
 static GameLostCallback game_lost;
 
-void init_invader_data(PlaydateAPI* playdate, GameLostCallback callback) {
-    pd = playdate;
+void init_invader_data(GameLostCallback callback) {
     game_lost = callback;
 
     const char* err;
-    invader_frames[0] = pd->graphics->loadBitmap("Images/invader_1", &err);
+    invader_frames[0] = gfx->loadBitmap("Images/invader_1", &err);
     if (invader_frames[0] == NULL)
-        pd->system->error("failed to load invader bitmap: %s", err);
-    invader_frames[1] = pd->graphics->loadBitmap("Images/invader_2", &err);
+        sys->error("failed to load invader bitmap: %s", err);
+    invader_frames[1] = gfx->loadBitmap("Images/invader_2", &err);
     if (invader_frames[1] == NULL)
-        pd->system->error("failed to load invader bitmap: %s", err);
+        sys->error("failed to load invader bitmap: %s", err);
 
     int width, height;
-    pd->graphics->getBitmapData(invader_frames[0], &width, &height, NULL, NULL, NULL);
+    gfx->getBitmapData(invader_frames[0], &width, &height, NULL, NULL, NULL);
     const int x_offset = width + X_PADDING;
     const int y_offset = height + Y_PADDING;
 
@@ -41,18 +38,18 @@ void init_invader_data(PlaydateAPI* playdate, GameLostCallback callback) {
         int x = i % INVADER_COLUMN_COUNT;
         int y = i / INVADER_COLUMN_COUNT;
         invaders[i] = (Invader) {
-            .sprite = pd->sprite->newSprite(),
+            .sprite = spr->newSprite(),
             .position = (Vec2) {
                 .x = start_x + x_offset * x,
                 .y = START_Y + y_offset * y,
             },
             .alive = 1,
         };
-        pd->sprite->moveTo(invaders[i].sprite, invaders[i].position.x, invaders[i].position.y);
-        pd->sprite->setImage(invaders[i].sprite, invader_frames[0], kBitmapUnflipped);
-        pd->sprite->setUserdata(invaders[i].sprite, &invaders[i]);
-        pd->sprite->setTag(invaders[i].sprite, kTagEnemy);
-        pd->sprite->addSprite(invaders[i].sprite);
+        spr->moveTo(invaders[i].sprite, invaders[i].position.x, invaders[i].position.y);
+        spr->setImage(invaders[i].sprite, invader_frames[0], kBitmapUnflipped);
+        spr->setUserdata(invaders[i].sprite, &invaders[i]);
+        spr->setTag(invaders[i].sprite, kTagEnemy);
+        spr->addSprite(invaders[i].sprite);
     }
 }
 
@@ -66,15 +63,15 @@ void update_invaders() {
 
         for (int i = 0; i < MAX_INVADERS; ++i) {
             if (! invaders[i].alive) continue;
-            pd->sprite->setImage(invaders[i].sprite, flipped ? invader_frames[1] : invader_frames[0], kBitmapUnflipped);
+            spr->setImage(invaders[i].sprite, flipped ? invader_frames[1] : invader_frames[0], kBitmapUnflipped);
         }
     }
 }
 
 void free_invaders() {
-    pd->graphics->freeBitmap(invader_frames[0]);
-    pd->graphics->freeBitmap(invader_frames[1]);
+    gfx->freeBitmap(invader_frames[0]);
+    gfx->freeBitmap(invader_frames[1]);
     for (int i = 0; i < MAX_INVADERS; ++i) {
-        pd->sprite->freeSprite(invaders[i].sprite);
+        spr->freeSprite(invaders[i].sprite);
     }
 }
