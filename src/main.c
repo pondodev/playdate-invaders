@@ -97,7 +97,6 @@ static void init(PlaydateAPI* pd) {
 
     // sound
     init_music(pd);
-    play_music();
     init_sound_effects(pd);
 
     // menu items
