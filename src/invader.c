@@ -1,3 +1,4 @@
+// TODO: this entire file needs a lot of refactoring
 #include "invader.h"
 
 #define INVADER_ROW_COUNT 5
@@ -49,15 +50,17 @@ void init_invader_data(GameLostCallback callback) {
         spr->setImage(invaders[i].sprite, invader_frames[0], kBitmapUnflipped);
         spr->setUserdata(invaders[i].sprite, &invaders[i]);
         spr->setTag(invaders[i].sprite, kTagEnemy);
+        spr->setCollideRect(invaders[i].sprite, PDRectMake(0.f, 0.f, width, height));
         spr->addSprite(invaders[i].sprite);
     }
 }
 
 static int flipped = 0;
 static int count = 0;
+#define FRAMES_TO_FLIP 20
 void update_invaders() {
     ++count;
-    if (count >= 20) {
+    if (count >= FRAMES_TO_FLIP) {
         count = 0;
         flipped = ! flipped;
 

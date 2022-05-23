@@ -7,6 +7,7 @@
 
 #include "globals.h"
 #include "game_math.h"
+#include "invader.h"
 
 typedef struct Projectile {
     LCDSprite* sprite;
@@ -18,6 +19,7 @@ typedef struct Projectile {
 
 void init_projectiles(void);
 Projectile* new_projectile(int x, int y, int velocity);
-void update_projectile(Projectile* projectile);
+int update_projectile(Projectile* projectile);
+void free_projectile(Projectile* projectile);
 
 #endif

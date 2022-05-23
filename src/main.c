@@ -12,9 +12,7 @@ const struct playdate_sound* snd = NULL;
 const struct playdate_sound_sequence* seq = NULL;
 const struct playdate_sound_synth* synth = NULL;
 
-static const ListManager* lm = NULL;
-
-static List projectiles; 
+List projectiles;
 
 typedef struct PlayerInfo {
     LCDBitmap*	image;
@@ -77,12 +75,14 @@ static void init(PlaydateAPI* playdate) {
     spr->setTag(player.sprite, kTagPlayer);
     spr->addSprite(player.sprite);
     spr->setImage(player.sprite, player.image, kBitmapUnflipped);
-    int player_height;
-    gfx->getBitmapData(player.image, NULL, &player_height, NULL, NULL, NULL);
+    int player_width, player_height;
+    gfx->getBitmapData(player.image, &player_width, &player_height, NULL, NULL, NULL);
 
     player.position.x = SCREEN_WIDTH / 2;
     player.position.y = SCREEN_HEIGHT - player_height;
     spr->moveTo(player.sprite, player.position.x, player.position.y);
+    spr->setCollideRect(player.sprite, PDRectMake(0.f, 0.f, player_width, player_height));
+    spr->setCollisionsEnabled(player.sprite, 1);
 
     player.walk_speed = 2;
     player.run_speed = 5;
@@ -101,8 +101,7 @@ static void init(PlaydateAPI* playdate) {
 
     // projectiles
     init_projectiles();
-    lm = get_list_manager();
-    projectiles = lm->init();
+    projectiles = lm.init();
 
     // sound
     init_music();
@@ -120,7 +119,7 @@ static void init(PlaydateAPI* playdate) {
 static int update(void* userdata) {
     process_input();
     process_player();
-    lm->iterate(&projectiles, update_projectiles);
+    lm.iterate(&projectiles, update_projectiles);
     draw();
     update_invaders();
 
@@ -172,7 +171,7 @@ static void process_player() {
 
         player.ammo_percent -= player.ammo_consumption_rate;
         Projectile* new_proj = new_projectile(player.position.x, player.position.y, 5);
-        lm->add(&projectiles, new_proj);
+        lm.add(&projectiles, new_proj);
     }
 }
 
@@ -214,7 +213,7 @@ static void draw() {
 
 static void game_terminated(PlaydateAPI* pd) {
     // probably don't need to, but it's just polite :)
-    lm->destroy(&projectiles);
+    lm.destroy(&projectiles);
     spr->freeSprite(player.sprite);
     gfx->freeBitmap(player.image);
     gfx->freeBitmap(projectile_image);
@@ -239,9 +238,9 @@ static void on_menu_sound_effects_change(void* userdata) {
 
 static ListNodeAction update_projectiles(uint32_t index, void* data) {
     Projectile* proj = (Projectile*)data;
-    update_projectile(proj);
-    if (proj->position.y < 0) {
-        spr->freeSprite(proj->sprite);
+    int collided = update_projectile(proj);
+    if (proj->position.y < 0 || collided) {
+        free_projectile(proj);
         return kRemove;
     }
 

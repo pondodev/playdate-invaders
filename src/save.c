@@ -21,19 +21,15 @@ void save_data(SaveData data) {
     snprintf(music, MAX_PROPERTY_LENGTH, "music:%s\n", data.music_enabled ? "true" : "false");
     strncat(buffer, music, MAX_PROPERTY_LENGTH);
     actual_size += strnlen(music, MAX_PROPERTY_LENGTH);
-    sys->logToConsole("music: %d", data.music_enabled);
 
     char fx[MAX_PROPERTY_LENGTH];
     snprintf(fx, MAX_PROPERTY_LENGTH, "fx:%s\n", data.sound_effects_enabled ? "true" : "false");
     strncat(buffer, fx, MAX_PROPERTY_LENGTH);
     actual_size += strnlen(fx, MAX_PROPERTY_LENGTH);
-    sys->logToConsole("fx: %d", data.sound_effects_enabled);
 
     SDFile* save_file = pd->file->open(SAVE_FILE_NAME, kFileWrite);
     if (! save_file)
         sys->error("failed to open file %s for writing", SAVE_FILE_NAME);
-
-    sys->logToConsole("OUTPUT: %s", buffer);
 
     pd->file->write(save_file, buffer, actual_size);
     pd->file->close(save_file);

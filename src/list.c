@@ -46,7 +46,7 @@ static void add(List* list, void* data) {
     list->count++;
 }
 
-static int remove(List* list, uint32_t index) {
+static int remove(List* list, uint32_t index, void** data_ptr) {
     if (list == NULL || index >= list->count) return 0;
 
     ListNode* to_remove = node_at(list, index);
@@ -71,12 +71,45 @@ static int remove(List* list, uint32_t index) {
         list->tail = NULL;
     }
 
-    free(to_remove->data);
+    if (data_ptr != NULL)
+        *data_ptr = to_remove->data;
     free(to_remove);
 
     list->count--;
 
     return 1;
+}
+
+static int remove_by_ptr(List* list, void* ptr, void** data_ptr) {
+    if (list == NULL) return 0;
+
+    ListNode* head_node = list->head;
+    while (head_node != NULL) {
+        if (head_node->data == ptr) { // TARGET ACQUIRED
+            ListNode* prev = head_node->prev;
+            ListNode* next = head_node->next;
+            prev->next = next;
+            next->prev = prev;
+
+            if (prev == NULL) {
+                list->head = head_node;
+            }
+
+            if (next == NULL) {
+                list->tail = head_node;
+            }
+
+            if (data_ptr != NULL)
+                *data_ptr = head_node->data;
+            free(head_node);
+
+            return 1;
+        }
+
+        head_node = head_node->next;
+    }
+
+    return 0;
 }
 
 static int pop(List* list, void** data_ptr) {
@@ -91,7 +124,8 @@ static int pop(List* list, void** data_ptr) {
         list->tail = NULL;
     }
 
-    *data_ptr = tail_node->data;
+    if (data_ptr != NULL)
+        *data_ptr = tail_node->data;
     free(tail_node);
 
     list->count--;
@@ -110,7 +144,8 @@ static int dequeue(List* list, void** data_ptr) {
         list->tail = NULL;
     }
 
-    *data_ptr = head_node->data;
+    if (data_ptr != NULL)
+        *data_ptr = head_node->data;
     free(head_node);
 
     list->count--;
@@ -129,12 +164,24 @@ static void iterate(List* list, iterator_callback callback) {
         current_head = current_head->next;
         switch (action) {
             case kNoAction:
+            {
                 ++index;
                 break;
+            }
 
             case kRemove:
-                remove(list, index);
+            {
+                remove(list, index, NULL);
                 break;
+            }
+
+            case kRemoveFree:
+            {
+                void* data_ptr;
+                remove(list, index, &data_ptr);
+                free(data_ptr);
+                break;
+            }
         }
     }
 }
@@ -159,16 +206,14 @@ static void destroy(List* list) {
     }
 }
 
-static const ListManager lm = {
-    .init = init,
-    .add = add,
-    .remove = remove,
-    .pop = pop,
-    .iterate = iterate,
-    .at = at,
-    .destroy = destroy
+const ListManager lm = {
+        .init           = init,
+        .add            = add,
+        .remove         = remove,
+        .remove_by_ptr  = remove_by_ptr,
+        .pop            = pop,
+        .iterate        = iterate,
+        .at             = at,
+        .destroy        = destroy,
 };
 
-const ListManager* get_list_manager() {
-    return &lm;
-}
