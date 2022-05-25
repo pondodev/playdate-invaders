@@ -16,6 +16,7 @@ typedef void (*GameLostCallback)(void);
 
 void init_invader_data(GameLostCallback callback);
 void update_invaders(void);
+void on_invader_kill(void);
 void free_invaders(void);
 
 #endif

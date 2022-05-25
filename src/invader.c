@@ -56,18 +56,69 @@ void init_invader_data(GameLostCallback callback) {
 }
 
 static int flipped = 0;
-static int count = 0;
-#define FRAMES_TO_FLIP 20
-void update_invaders() {
-    ++count;
-    if (count >= FRAMES_TO_FLIP) {
-        count = 0;
-        flipped = ! flipped;
+static int frame_count = 0;
+#define MIN_SPEED 0.1f
+#define MAX_SPEED 5.f
+static float speed = MIN_SPEED;
+static int moving_right = 1;
+static int should_move_down = 0;
+#define MIN_FRAMES_TO_FLIP 5
+#define MAX_FRAMES_TO_FLIP 20
+static int frames_to_flip = MAX_FRAMES_TO_FLIP;
+#define MIN_SPACE_FROM_EDGE 20
 
-        for (int i = 0; i < MAX_INVADERS; ++i) {
-            if (! invaders[i].alive) continue;
-            spr->setImage(invaders[i].sprite, flipped ? invader_frames[1] : invader_frames[0], kBitmapUnflipped);
+void update_invaders() {
+    ++frame_count;
+    int image_changed = 0;
+    if (frame_count >= frames_to_flip) {
+        image_changed = 1;
+        frame_count = 0;
+        flipped = ! flipped;
+    }
+
+    const Vec2 velocity = {
+        .x = moving_right ? speed : -speed,
+        .y = should_move_down ? 10.f : 0.f,
+    };
+    should_move_down = 0;
+
+    for (int i = 0; i < MAX_INVADERS; ++i) {
+        if (! invaders[i].alive) continue;
+
+        invaders[i].position.x += velocity.x;
+        invaders[i].position.y += velocity.y;
+        spr->moveTo(invaders[i].sprite, invaders[i].position.x, invaders[i].position.y);
+
+        int dist;
+        if (moving_right) dist = SCREEN_WIDTH - invaders[i].position.x;
+        else dist = invaders[i].position.x;
+
+        if (dist <= MIN_SPACE_FROM_EDGE) {
+            moving_right = ! moving_right;
+            should_move_down = 1;
         }
+
+        if (image_changed)
+            spr->setImage(invaders[i].sprite, flipped ? invader_frames[1] : invader_frames[0], kBitmapUnflipped);
+    }
+}
+
+static int invaders_killed = 0;
+void on_invader_kill() {
+    ++invaders_killed;
+    // speed adjustment
+    {
+        const int min = 0;
+        const int max = MAX_INVADERS - (MAX_INVADERS / INVADER_ROW_COUNT);
+        float t = inverse_lerp(min, max, invaders_killed);
+        speed = ease_in_quart(MIN_SPEED, MAX_SPEED, t);
+    }
+    // animation speed adjustment
+    {
+        const int min = MAX_INVADERS - (INVADER_COLUMN_COUNT * 3);
+        const int max = MAX_INVADERS;
+        float t = inverse_lerp(min, max, invaders_killed);
+        frames_to_flip = ease_in_expo(MIN_FRAMES_TO_FLIP, MAX_FRAMES_TO_FLIP, 1.f - t);
     }
 }
 
