@@ -240,6 +240,7 @@ static ListNodeAction update_projectiles(uint32_t index, void* data) {
     Projectile* proj = (Projectile*)data;
     int collided = update_projectile(proj);
     if (proj->position.y < 0 || collided) {
+        if (collided) play_invader_death_sound();
         free_projectile(proj);
         return kRemove;
     }

@@ -12,5 +12,6 @@ void mute_sound_effects(void);
 void unmute_sound_effects(void);
 void play_projectile_sound(void);
 void play_reload_sound(float percent);
+void play_invader_death_sound(void);
 
 #endif
