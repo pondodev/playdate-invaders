@@ -43,12 +43,13 @@ PlayerInput input;
 MenuItems menu;
 
 LCDBitmap* projectile_image = NULL;
+int game_running = 1;
 
 int eventHandler(PlaydateAPI* pd, PDSystemEvent event, uint32_t arg) {
     (void)arg; // arg is currently only used for event = kEventKeyPressed
 
     if (event == kEventInit) init(pd);
-    if (event == kEventTerminate) game_terminated(pd);
+    if (event == kEventTerminate) game_terminated();
 
     return 0;
 }
@@ -80,13 +81,11 @@ static void init(PlaydateAPI* playdate) {
 
     player.position.x = SCREEN_WIDTH / 2;
     player.position.y = SCREEN_HEIGHT - player_height;
-    spr->moveTo(player.sprite, player.position.x, player.position.y);
     spr->setCollideRect(player.sprite, PDRectMake(0.f, 0.f, player_width, player_height));
     spr->setCollisionsEnabled(player.sprite, 1);
 
     player.walk_speed = 2;
     player.run_speed = 5;
-    player.ammo_percent = 100.f;
     player.ammo_reload_rate = 0.1f;
     player.ammo_consumption_rate = 10.f;
 
@@ -113,15 +112,29 @@ static void init(PlaydateAPI* playdate) {
     on_menu_music_change(NULL);
     on_menu_sound_effects_change(NULL);
 
+    setup_defaults();
     sys->setUpdateCallback(update, NULL);
+}
+
+static void setup_defaults() {
+    game_running = 1;
+
+    spr->moveTo(player.sprite, player.position.x, player.position.y);
+    player.ammo_percent = 100.f;
+    reset_invaders();
 }
 
 static int update(void* userdata) {
     process_input();
-    process_player();
-    lm.iterate(&projectiles, update_projectiles);
-    draw();
-    update_invaders();
+
+    if (game_running) {
+        process_player();
+        lm.iterate(&projectiles, update_projectiles);
+        draw();
+        update_invaders();
+    } else {
+        process_game_end();
+    }
 
     return 1;
 }
@@ -175,6 +188,15 @@ static void process_player() {
     }
 }
 
+static void process_game_end() {
+    // TODO: nice display for end of game
+    if (input.firing) {
+        // cheap way of restarting lol
+        // TODO: fuck it crashes
+        setup_defaults();
+    }
+}
+
 static void draw() {
     gfx->clear(kColorWhite);
     spr->drawSprites();
@@ -211,7 +233,7 @@ static void draw() {
     sys->drawFPS(0,0);
 }
 
-static void game_terminated(PlaydateAPI* pd) {
+static void game_terminated() {
     // probably don't need to, but it's just polite :)
     lm.destroy(&projectiles);
     spr->freeSprite(player.sprite);
@@ -252,5 +274,5 @@ static ListNodeAction update_projectiles(uint32_t index, void* data) {
 }
 
 static void game_lost() {
-    sys->logToConsole("TODO: implement game lose state!");
+    game_running = 0;
 }

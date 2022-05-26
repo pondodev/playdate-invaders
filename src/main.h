@@ -18,11 +18,13 @@
 
 // game loop functions
 static void init(PlaydateAPI* pd);
+static void setup_defaults(void);
 static int update(void* userdata);
 static void process_input(void);
 static void process_player(void);
+static void process_game_end(void);
 static void draw(void);
-static void game_terminated(PlaydateAPI* pd);
+static void game_terminated(void);
 
 // menu callbacks
 static void on_menu_music_change(void* userdata);

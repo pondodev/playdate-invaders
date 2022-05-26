@@ -24,5 +24,6 @@ extern const struct playdate_sound_sequence* seq;
 extern const struct playdate_sound_synth* synth;
 
 extern const ListManager lm;
+extern int game_running;
 
 #endif

@@ -15,6 +15,7 @@ typedef struct Invader {
 typedef void (*GameLostCallback)(void);
 
 void init_invader_data(GameLostCallback callback);
+void reset_invaders(void);
 void update_invaders(void);
 void on_invader_kill(void);
 void free_invaders(void);

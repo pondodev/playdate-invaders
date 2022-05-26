@@ -11,6 +11,21 @@
 #define X_PADDING 5
 #define Y_PADDING 10
 
+// movement/animation related
+static int flipped = 0;
+static int frame_count = 0;
+#define MIN_SPEED 0.1f
+#define MAX_SPEED 5.f
+static float speed = MIN_SPEED;
+static int moving_right = 1;
+static int should_move_down = 0;
+#define MIN_FRAMES_TO_FLIP 5
+#define MAX_FRAMES_TO_FLIP 20
+static int frames_to_flip = MAX_FRAMES_TO_FLIP;
+#define MIN_SPACE_FROM_EDGE 20
+#define FINISH_LINE SCREEN_HEIGHT - 40
+static int invaders_killed = 0;
+
 static LCDBitmap* invader_frames[2];
 static Invader invaders[MAX_INVADERS];
 static GameLostCallback game_lost;
@@ -28,6 +43,23 @@ void init_invader_data(GameLostCallback callback) {
 
     int width, height;
     gfx->getBitmapData(invader_frames[0], &width, &height, NULL, NULL, NULL);
+
+    for (int i = 0; i < MAX_INVADERS; ++i) {
+        invaders[i] = (Invader) {
+            .sprite = spr->newSprite(),
+            .alive = 1,
+        };
+        spr->setImage(invaders[i].sprite, invader_frames[0], kBitmapUnflipped);
+        spr->setUserdata(invaders[i].sprite, &invaders[i]);
+        spr->setTag(invaders[i].sprite, kTagEnemy);
+        spr->setCollideRect(invaders[i].sprite, PDRectMake(0.f, 0.f, width, height));
+        spr->addSprite(invaders[i].sprite);
+    }
+}
+
+void reset_invaders() {
+    int width, height;
+    gfx->getBitmapData(invader_frames[0], &width, &height, NULL, NULL, NULL);
     const int x_offset = width + X_PADDING;
     const int y_offset = height + Y_PADDING;
 
@@ -38,34 +70,22 @@ void init_invader_data(GameLostCallback callback) {
     for (int i = 0; i < MAX_INVADERS; ++i) {
         int x = i % INVADER_COLUMN_COUNT;
         int y = i / INVADER_COLUMN_COUNT;
-        invaders[i] = (Invader) {
-            .sprite = spr->newSprite(),
-            .position = (Vec2) {
-                .x = start_x + x_offset * x,
-                .y = START_Y + y_offset * y,
-            },
-            .alive = 1,
+        invaders[i].position = (Vec2) {
+            .x = start_x + x_offset * x,
+            .y = START_Y + y_offset * y,
         };
         spr->moveTo(invaders[i].sprite, invaders[i].position.x, invaders[i].position.y);
-        spr->setImage(invaders[i].sprite, invader_frames[0], kBitmapUnflipped);
-        spr->setUserdata(invaders[i].sprite, &invaders[i]);
-        spr->setTag(invaders[i].sprite, kTagEnemy);
-        spr->setCollideRect(invaders[i].sprite, PDRectMake(0.f, 0.f, width, height));
-        spr->addSprite(invaders[i].sprite);
-    }
-}
 
-static int flipped = 0;
-static int frame_count = 0;
-#define MIN_SPEED 0.1f
-#define MAX_SPEED 5.f
-static float speed = MIN_SPEED;
-static int moving_right = 1;
-static int should_move_down = 0;
-#define MIN_FRAMES_TO_FLIP 5
-#define MAX_FRAMES_TO_FLIP 20
-static int frames_to_flip = MAX_FRAMES_TO_FLIP;
-#define MIN_SPACE_FROM_EDGE 20
+        if (! invaders[i].alive) {
+            invaders[i].alive = 1;
+            spr->addSprite(invaders[i].sprite);
+        }
+    }
+
+    speed = MIN_SPEED;
+    frames_to_flip = MAX_FRAMES_TO_FLIP;
+    invaders_killed = 0;
+}
 
 void update_invaders() {
     ++frame_count;
@@ -87,6 +107,10 @@ void update_invaders() {
 
         invaders[i].position.x += velocity.x;
         invaders[i].position.y += velocity.y;
+        if (invaders[i].position.y >= FINISH_LINE) {
+            game_lost();
+            break; // don't need to keep checking now that the lose condition has been met
+        }
         spr->moveTo(invaders[i].sprite, invaders[i].position.x, invaders[i].position.y);
 
         int dist;
@@ -103,7 +127,6 @@ void update_invaders() {
     }
 }
 
-static int invaders_killed = 0;
 void on_invader_kill() {
     ++invaders_killed;
     // speed adjustment
